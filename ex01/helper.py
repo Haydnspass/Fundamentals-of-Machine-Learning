@@ -1,8 +1,10 @@
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 from scipy.spatial import distance
+from scipy.stats import mode
 import numpy as np
 import time
+import itertools
 import matplotlib.pyplot as plt
 
 digits = load_digits()
@@ -46,8 +48,7 @@ def dist_loop(training_set, test_set):
     dist = np.zeros((training_set.shape[0], test_set.shape[0]))
     for i in range(training_set.shape[0]):
         for j in range(test_set.shape[0]):
-            temp_sum = np.sqrt(np.sum(np.square(test_set[j,k]-training_set[i,k]) for k in range(training_set.shape[1])))
-            dist[i,j] = temp_sum
+            dist[i, j] = np.sqrt(np.sum(np.square(test_set[j,k]-training_set[i,k]) for k in range(training_set.shape[1])))
     return dist
 
 def dist_mat(training_set, test_set):
@@ -81,9 +82,10 @@ def nearest_neighbour(xt, x, yt): # x: new data, xt: trained data yt: trained ta
 def k_nearest_neighbour(xt, x, yt, k):
     dist = dist_mat(xt, x)  # rows are xt, columns x, so find argmin in one column
     argmin_dist = np.argsort(dist, 0)
-    y_argmin_dist = yt[argmin_dist,k]
+    y_argmin_dist = yt[argmin_dist[:k,:]] #[argmin_dist,k]
     # find most common value and output that as majority vote /// tbd
-
+    majority_information = mode(y_argmin_dist, axis=0)
+    return np.squeeze(majority_information.mode)
     #return y
 
 
@@ -102,18 +104,43 @@ def calc_true_pred(y_p, y_t):
     is_true = np.zeros_like(y_t)
     is_true[(y_p == y_t)] = 1
     no_true = np.sum(is_true)
-    return no_true
+    perc_true = no_true / len(y_p)
+    return no_true, perc_true
 
 y_pNN = nearest_neighbour(X_train_sub, X_test_sub, y_train_sub)
+y_pkNN = k_nearest_neighbour(X_train_sub, X_test_sub, y_train_sub, 10)
 
-percent_true = (calc_true_pred(y_pNN, y_test_sub)) / len(y_test_sub)
-print(percent_true)
+_, percent_true_1NN = calc_true_pred(y_pNN, y_test_sub)
+_, percent_true_kNN = calc_true_pred(y_pkNN, y_test_sub)
+
+#print(percent_true_1NN)
+#print(percent_true_kNN)
 
 
+def cross_validation(x,y,k,folds):
+    len_data = len(y)
+    fold_size = np.floor(len_data / folds)
+
+    percent_true_kNN = np.zeros((folds,1))
+    for i in range(folds):
+        ix_test = list(range(int(i * fold_size), int((i + 1) * fold_size)))
+        ix_train = list(range(len_data))
+        del ix_train[int(i * fold_size):int((i + 1) * fold_size)]
+
+        xs_train = x[ix_train]
+        xs_test = x[ix_test]
+
+        ys_train = y[ix_train]
+        ys_test = y[ix_test]
 
 
+        result_classifier = k_nearest_neighbour(xs_train,xs_test,ys_train, k)
+        _, percent_true_kNN[i] = calc_true_pred(result_classifier, ys_test)
+        # print(percent_true_kNN[i])
+    mean_perc = np.mean(percent_true_kNN)
+    print(mean_perc)
 
-
+cross_validation(digits.data, digits.target, 5, 10)
 
 
 #do some stuff
