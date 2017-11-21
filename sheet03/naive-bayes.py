@@ -12,6 +12,9 @@ import matplotlib.pyplot as plt
 def use_subset(condition, x, y):
     sub_ix = np.where((y == condition[0]) | (y == condition[1]))
     y_sub = (y[sub_ix]).squeeze()
+    # rename labels
+    y_sub[y_sub == condition[0]] = 0
+    y_sub[y_sub == condition[1]] = 1
     x_sub = (x[sub_ix, :]).squeeze()
     return x_sub, y_sub
 
@@ -52,10 +55,38 @@ def fit_naive_bayes(features, labels, bincount=0):
 
 
 def predict_naive_bayes(features, hist, binning):
-    l = np.floor((features - binning[:,:,0])/binning[:,:,1])
-    print('hhh')
-    return l
+    l = np.nan * np.ones((features.shape[0], hist.shape[0], features.shape[1]), dtype=np.int)
+    # assign instance i to correct bin
+    for i in range(features.shape[0]):
+        for j in range(features.shape[1]):
+            for k in range(hist.shape[0]):
+                l[i, k, j] = np.floor((features[i,j] - binning[k,j,0])/binning[k,j,1])
+                if l[i, k, j] >= 8:
+                    l[i, k, j] += -1
 
+    # get N_l
+    p_h = np.zeros_like(l)
+    p = np.zeros_like(l[:,:,0])
+    for i in range(features.shape[0]):
+        for j in range(features.shape[1]):
+            for k in range(hist.shape[0]):
+                p_h[i, k, j] = hist[k, j, int(l[i, k, j])] / (np.sum(hist[k,j,:]) * binning[k,j,1])
+    for i in range(features.shape[0]):
+        for k in range(hist.shape[0]):
+            p[i, k] = np.prod([p_h[i, k, j] for j in range(features.shape[1])])
+    y = np.nan * np.ones(features.shape[0], dtype=np.int)
+    y = np.argmax(p, 1)
+    return p, y
+
+
+def pred_quality(pred, truth):
+    is_eq = (pred == truth)
+    pass_rate = np.sum(is_eq) / is_eq.__len__()
+    err_rate = 1-pass_rate
+    return pass_rate, err_rate
+
+# i: instance, j: feature, k: class
+# C: num class, D: feautre dim, L: num bins
 
 if __name__ == '__main__':
 
@@ -73,4 +104,6 @@ if __name__ == '__main__':
     X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=0)
 
     hist, binning = fit_naive_bayes(X_train, y_train)
-    predict_naive_bayes(X_test, hist, binning)
+    _, y_pred = predict_naive_bayes(X_test, hist, binning)
+    passed, errored = pred_quality(y_pred, y_test)
+    print('Prediction pass rate: ', passed, ' ---- error rate: ', errored)
