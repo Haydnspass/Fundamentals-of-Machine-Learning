@@ -19,6 +19,14 @@ def use_subset(condition, x, y):
     return x_sub, y_sub
 
 
+def red_dim(x, features=[10, 60]):
+    x_red = np.zeros((x.shape[0], len(features)))
+    x_red[:, 0] = x[:, features[0]]
+    x_red[:, 1] = x[:, features[1]]
+
+    return x_red
+
+
 def fit_naive_bayes(features, labels, bincount=0):
     def filter_data(features, labels, c):
         assert c in labels, 'Class is not in labels'
@@ -61,7 +69,7 @@ def predict_naive_bayes(features, hist, binning):
         for j in range(features.shape[1]):
             for k in range(hist.shape[0]):
                 l[i, k, j] = np.floor((features[i,j] - binning[k,j,0])/binning[k,j,1])
-                if l[i, k, j] >= 8:
+                if l[i, k, j] >= (binning.shape[2] - 1):
                     l[i, k, j] += -1
 
     # get N_l
@@ -98,7 +106,8 @@ if __name__ == '__main__':
     images = digits["images"]
     target = digits["target"]
     target_names = digits["target_names"]
-    #
+
+    # data = red_dim(data)
     x, y = use_subset([1, 7], data, target)
 
     X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=0)
