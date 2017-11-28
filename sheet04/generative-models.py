@@ -191,8 +191,10 @@ if __name__ == '__main__':
 
     gnb = GenerativeBayes()
     gnb.train(x, y)
-    gnb.predict_single(x[20, :])
-    new_px = gnb.sample_naive_bayes(0)
-    new_px = new_px.reshape(images[0,:,:].shape)
-    plt.imshow(new_px)
+    f, axarr = plt.subplots(3, 3, figsize=(10, 10))
+    for i in range(9):
+        new_px = gnb.sample_naive_bayes(0)
+        new_px = new_px.reshape(images[0, :, :].shape)
+        axarr[i % 3, i // 3].imshow(new_px)
+
     plt.show()
