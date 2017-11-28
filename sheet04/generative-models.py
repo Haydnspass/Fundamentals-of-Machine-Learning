@@ -126,14 +126,35 @@ class NaiveBayesClassifier(object):
         return np.array([self.predict_single(test_x[i]) for i in range(test_x.shape[0])])
 
 
+def use_subset(condition, x, y):
+    sub_ix = np.where((y == condition[0]) | (y == condition[1]))
+    y_sub = (y[sub_ix]).squeeze()
+    # rename labels
+    y_sub[y_sub == condition[0]] = 0
+    y_sub[y_sub == condition[1]] = 1
+    x_sub = (x[sub_ix, :]).squeeze()
+    return x_sub, y_sub
+
+def inverse_transform_sampling(data, n_bins=40, n_samples=1000):
+    hist, bin_edges = np.histogram(data, bins=n_bins, density=True)
+    cum_values = np.zeros(bin_edges.shape)
+    cum_values[1:] = np.cumsum(hist*np.diff(bin_edges))
+    inv_cdf = interpolate.interp1d(cum_values, bin_edges)
+    r = np.random.rand(n_samples)
+    return inv_cdf(r)
+
+
 class GenerativeBayes(NaiveBayesClassifier):
-    def sample_naive_bayes(self):
-        # loop over feature dimensions
-        # select bin
-        # Pl = n_l / n
-        # inverse transform sampling
-        # select location, i.e. pixel value
-        print(self.histograms[0])
+    def sample_naive_bayes(self, digitIx):
+        pxValue = np.zeros(len(self.histograms[digitIx]))
+        for i, px in enumerate(self.histograms[digitIx]):
+            ql = np.cumsum(px.heights)
+            ql = ql / px.num_instances
+            t = np.random.random_sample()
+            l_ix = np.where(ql >= t)
+            l = l_ix[0][0]
+            pxValue[i] = (px.bin_edges[l + 1] - px.bin_edges[l]) * np.random.random_sample() + px.bin_edges[l]
+        return pxValue
 
 
 def use_subset(condition, x, y):
@@ -156,15 +177,22 @@ if __name__ == '__main__':
     print(labels.shape)
 
     # use only digit 3
-    x, y = use_subset([3, 3], images, labels)
+    x, y = use_subset([3, 7], images, labels)
     
 
-    f, axarr = plt.subplots(3, 3)
-    for i in range(9):
-        axarr[i % 3, i // 3].imshow(x[i, :, :])
+    # f, axarr = plt.subplots(3, 3)
+    # for i in range(9):
+    #     axarr[i % 3, i // 3].imshow(x[i, :, :])
 
     # plt.show()
 
+    # reshape
+    x = np.reshape(x, (x.shape[0], -1))
+
     gnb = GenerativeBayes()
     gnb.train(x, y)
-    gnb.predict_single(x[5,:,:])
+    gnb.predict_single(x[20, :])
+    new_px = gnb.sample_naive_bayes(0)
+    new_px = new_px.reshape(images[0,:,:].shape)
+    plt.imshow(new_px)
+    plt.show()
