@@ -6,4 +6,4 @@ install:
   - pip install -r requirements.txt
 # command to run tests
 script:
-  - pytest # or py.
+  - python -m pytest sheet04/test_generative_models.py
