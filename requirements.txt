@@ -1,7 +1,6 @@
 # Core
 h5py
 numpy
-sys
 numpy
 bisect
 matplotlib
