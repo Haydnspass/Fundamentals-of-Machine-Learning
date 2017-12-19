@@ -5,6 +5,8 @@ import bisect
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+
 class Histogram(object):
     """Histogram.
     """
@@ -164,6 +166,8 @@ def use_subset(condition, x, y):
     y_sub[y_sub == condition[1]] = 1
     x_sub = (x[sub_ix, :]).squeeze()
     return x_sub, y_sub
+
+
 
 
 if __name__ == '__main__':

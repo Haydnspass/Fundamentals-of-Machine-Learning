@@ -10,7 +10,10 @@ def construct_x(M, a, h, alphas, Np=None):
         return c
 
     def rot_unit_n(phi):
-        return np.array([np.sin(phi) np.cos(phi)], ndim=2).reshape((2, -1))
+        return np.array([np.sin(phi), np.cos(phi)], ndim=2).reshape((2, -1))
+    
+    def sensor_origin(phi, r=1, phi_0=np.pi/2):
+        return np.array([r * np.cos(phi - phi_0) - r, r + r * np.sin(phi)], ndim=2).reshape((2, -1))
 
     def projection(n, C, s0):
         p = np.dot(np.transpose(n), C) + s0
